@@ -85,9 +85,16 @@
                 <div class="card-heading">
                     <div>
                         <h2>Tren pengiriman</h2>
-                        <p>Jumlah pengiriman berdasarkan waktu input</p>
+                        <p id="trend-description">Jumlah pengiriman berdasarkan hari</p>
                     </div>
-                    <span class="chart-legend"><i></i> Pengiriman</span>
+                    <div class="trend-controls">
+                        <label for="trend-period">Periode</label>
+                        <select id="trend-period">
+                            <option value="day">Hari</option>
+                            <option value="month">Bulan</option>
+                            <option value="year">Tahun</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="line-chart">
                     <div class="y-axis" aria-hidden="true"><span>8</span><span>6</span><span>4</span><span>2</span><span>0</span></div>
@@ -155,12 +162,12 @@
         let reports = [];
 
         async function updateDashboard() {
-            const shipmentResult = await supabase.from("shipments").select("id, origin, destination, shipping_time, status, created_at").order("created_at", { ascending: true });
+            const shipmentResult = await supabase.from("shipments").select("id, trip_id, shipping_date, origin, destination, shipping_time, planned_arrival, arrival_time, driver_id, fleet_type, status, created_at").order("shipping_date", { ascending: true });
             const reportResult = await supabase.from("reports").select("id");
             if (shipmentResult.error) throw shipmentResult.error;
             if (reportResult.error) throw reportResult.error;
             shipments = shipmentResult.data.map(function (item) {
-                return { origin: item.origin, destination: item.destination, time: item.shipping_time, status: item.status, createdAt: item.created_at };
+                return { tripId: item.trip_id, shippingDate: item.shipping_date, origin: item.origin, destination: item.destination, time: item.shipping_time, status: item.status, plannedArrival: item.planned_arrival, arrivalTime: item.arrival_time, driverId: item.driver_id, fleetType: item.fleet_type, createdAt: item.created_at };
             });
             reports = reportResult.data;
             const arrived = shipments.filter(function (item) { return item.status === "Sudah"; }).length;
@@ -177,30 +184,47 @@
             document.getElementById("legend-pending").textContent = pending;
             document.getElementById("status-donut").style.setProperty("--arrived-rate", rate + "%");
 
-            renderTrend(shipments);
+            renderTrend(shipments, document.getElementById("trend-period").value);
             renderRoutes(shipments);
             renderRecent(shipments);
         }
 
-        function renderTrend(shipments) {
-            const days = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
-            const counts = [0, 0, 0, 0, 0, 0, 0];
+        function renderTrend(shipments, period) {
+            const labels = period === "day" ? ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"] : period === "month" ? ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"] : [];
+            const counts = labels.length ? labels.map(function () { return 0; }) : [];
             shipments.forEach(function (shipment) {
-                if (!shipment.createdAt) return;
-                const date = new Date(shipment.createdAt);
-                if (!Number.isNaN(date.getTime())) counts[(date.getDay() + 6) % 7]++;
+                const date = new Date((shipment.shippingDate || "") + "T00:00:00");
+                if (Number.isNaN(date.getTime())) return;
+                if (period === "day") counts[(date.getDay() + 6) % 7]++;
+                if (period === "month") counts[date.getMonth()]++;
+                if (period === "year") {
+                    const year = String(date.getFullYear());
+                    const index = labels.indexOf(year);
+                    if (index >= 0) counts[index]++;
+                }
             });
+            if (period === "year") {
+                const years = {};
+                shipments.forEach(function (shipment) {
+                    const year = (shipment.shippingDate || "").slice(0, 4);
+                    if (year) years[year] = (years[year] || 0) + 1;
+                });
+                labels.push.apply(labels, Object.keys(years).sort());
+                counts.push.apply(counts, labels.map(function (year) { return years[year] || 0; }));
+            }
             const max = Math.max(2, Math.max.apply(null, counts));
+            const step = labels.length > 1 ? 600 / (labels.length - 1) : 600;
             const points = counts.map(function (count, index) {
-                return (index * 100) + "," + (200 - (count / max) * 170);
+                return (index * step) + "," + (200 - (count / max) * 170);
             });
             document.getElementById("trend-line").setAttribute("points", points.join(" "));
             document.getElementById("trend-area").setAttribute("d", "M " + points.join(" L ") + " L 600,210 L 0,210 Z");
             document.getElementById("trend-dots").innerHTML = points.map(function (point, index) {
                 const values = point.split(",");
-                return '<circle cx="' + values[0] + '" cy="' + values[1] + '" r="4" fill="#fff" stroke="#4c78b6" stroke-width="3"><title>' + days[index] + ": " + counts[index] + " pengiriman</title></circle>";
+                return '<circle cx="' + values[0] + '" cy="' + values[1] + '" r="4" fill="#fff" stroke="#4c78b6" stroke-width="3"><title>' + labels[index] + ": " + counts[index] + " pengiriman</title></circle>";
             }).join("");
-            document.getElementById("trend-labels").innerHTML = days.map(function (day) { return "<span>" + day + "</span>"; }).join("");
+            document.getElementById("trend-labels").innerHTML = labels.map(function (label) { return "<span>" + label + "</span>"; }).join("");
+            document.getElementById("trend-description").textContent = "Jumlah pengiriman berdasarkan " + (period === "day" ? "hari" : period === "month" ? "bulan" : "tahun");
         }
 
         function renderRoutes(shipments) {
@@ -221,10 +245,14 @@
             const recent = shipments.slice(-4).reverse();
             const container = document.getElementById("recent-shipments");
             container.innerHTML = recent.length ? recent.map(function (shipment) {
-                const statusClass = shipment.status === "Sudah" ? "status-arrived" : "status-pending";
-                return '<div class="recent-item"><div class="route-avatar">↗</div><div class="recent-route"><strong>' + (shipment.origin || "-") + " → " + (shipment.destination || "-") + '</strong><span>' + (shipment.time || "--:--") + ' · Jadwal pengiriman</span></div><span class="status ' + statusClass + '">' + (shipment.status || "Belum") + "</span></div>";
+                const statusClass = shipment.status === "Sudah" ? "status-arrived" : shipment.status === "Terlambat" ? "status-late" : "status-pending";
+                return '<div class="recent-item"><div class="route-avatar">↗</div><div class="recent-route"><strong>' + (shipment.origin || "-") + " → " + (shipment.destination || "-") + '</strong><span>' + (shipment.shippingDate || "--") + " · " + (shipment.time || "--:--") + '</span></div><span class="status ' + statusClass + '">' + (shipment.status || "Belum") + "</span></div>";
             }).join("") : '<p class="empty-chart">Belum ada pengiriman. <a href="inputdata.html">Tambah data sekarang</a>.</p>';
         }
+
+        document.getElementById("trend-period").addEventListener("change", function (event) {
+            renderTrend(shipments, event.target.value);
+        });
 
         try {
             const session = await requirePageAccess("dashboard.html");

@@ -46,10 +46,13 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Origin</th>
-                            <th>Destination</th>
+                            <th>Trip ID</th>
+                            <th>Tanggal</th>
+                            <th>Origin → Destination</th>
                             <th>Jam Kirim</th>
+                            <th>Planning Sampai</th>
                             <th>Jam Sampai</th>
+                            <th>Driver / Armada</th>
                             <th>Status</th>
                             <th>Aksi</th>
                         </tr>
@@ -79,7 +82,7 @@
         let selectedShipmentIndex = null;
 
         async function getShipments() {
-            const { data, error } = await supabase.from("shipments").select("id, origin, destination, shipping_time, arrival_time, status").order("created_at", { ascending: false });
+            const { data, error } = await supabase.from("shipments").select("id, trip_id, shipping_date, origin, destination, shipping_time, planned_arrival, arrival_time, driver_id, fleet_type, status").order("shipping_date", { ascending: false }).order("shipping_time", { ascending: false });
             if (error) throw error;
             return data;
         }
@@ -92,18 +95,21 @@
             document.getElementById("monitor-pending").textContent = shipments.filter(function (item) { return item.status !== "Sudah"; }).length;
 
             if (shipments.length === 0) {
-                shipmentList.innerHTML = '<tr><td colspan="6" class="empty-state">Belum ada data pengiriman.</td></tr>';
+                shipmentList.innerHTML = '<tr><td colspan="9" class="empty-state">Belum ada data pengiriman.</td></tr>';
                 return;
             }
 
             shipments.forEach(function (shipment, index) {
                 const row = document.createElement("tr");
                 row.innerHTML = `
-                    <td>${shipment.origin}</td>
-                    <td>${shipment.destination}</td>
+                    <td>${shipment.trip_id}</td>
+                    <td>${shipment.shipping_date}</td>
+                    <td>${shipment.origin} → ${shipment.destination}</td>
                     <td>${shipment.shipping_time}</td>
+                    <td>${shipment.planned_arrival}</td>
                     <td>${shipment.arrival_time || "-"}</td>
-                    <td><span class="status ${shipment.status === "Sudah" ? "status-arrived" : "status-pending"}">${shipment.status}</span></td>
+                    <td>${shipment.driver_id}<br><small>${shipment.fleet_type}</small></td>
+                    <td><span class="status ${shipment.status === "Sudah" ? "status-arrived" : shipment.status === "Terlambat" ? "status-late" : "status-pending"}">${shipment.status}</span></td>
                     <td><button type="button" class="verify-button" data-index="${index}">Verifikasi</button></td>
                 `;
                 shipmentList.appendChild(row);
@@ -123,7 +129,9 @@
             const shipments = await getShipments();
             const shipment = shipments[selectedShipmentIndex];
             const arrivalTime = button.dataset.status === "Sudah" ? new Date().toTimeString().slice(0, 8) : null;
-            const { error } = await supabase.from("shipments").update({ status: button.dataset.status, arrival_time: arrivalTime }).eq("id", shipment.id);
+            let status = button.dataset.status;
+            if (status === "Sudah" && timeToMinutes(arrivalTime) > timeToMinutes(shipment.planned_arrival) + 30) status = "Terlambat";
+            const { error } = await supabase.from("shipments").update({ status: status, arrival_time: arrivalTime }).eq("id", shipment.id);
             if (error) {
                 showError(error.message);
                 return;
@@ -131,6 +139,11 @@
             modal.hidden = true;
             await renderShipments();
         });
+
+        function timeToMinutes(time) {
+            const parts = time.split(":").map(Number);
+            return parts[0] * 60 + parts[1];
+        }
         });
 
         document.getElementById("close-modal").addEventListener("click", function () {

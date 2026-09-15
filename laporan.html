@@ -85,7 +85,7 @@
         const reportList = document.getElementById("report-list");
 
         async function getShipments() {
-            const { data, error } = await supabase.from("shipments").select("id, origin, destination, shipping_time").order("created_at", { ascending: false });
+            const { data, error } = await supabase.from("shipments").select("id, trip_id, origin, destination, shipping_time, shipping_date").order("shipping_date", { ascending: false });
             if (error) throw error;
             return data;
         }
@@ -104,7 +104,7 @@
             shipments.forEach(function (shipment, index) {
                 const option = document.createElement("option");
                 option.value = index;
-                option.textContent = `${shipment.origin} → ${shipment.destination} (${shipment.shipping_time})`;
+                option.textContent = `${shipment.trip_id} · ${shipment.origin} → ${shipment.destination} (${shipment.shipping_date})`;
                 shipmentInput.appendChild(option);
             });
 

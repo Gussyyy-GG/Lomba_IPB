@@ -38,6 +38,27 @@
 
             <form id="shipping-form">
                 <div class="form-group">
+                    <label for="trip-id">Trip ID</label>
+                    <input type="text" id="trip-id" name="trip-id" placeholder="Contoh: TRIP-001" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="shipping-date">Tanggal Pengiriman</label>
+                    <input type="date" id="shipping-date" name="shipping-date" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="jam-kirim">Jam Kirim</label>
+                    <input type="time" id="jam-kirim" name="jam-kirim" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="planned-arrival">Planning Sampai</label>
+                    <input type="time" id="planned-arrival" name="planned-arrival" required>
+                    <small class="field-help">Toleransi waktu: 30 menit sebelum dan sesudah planning.</small>
+                </div>
+
+                <div class="form-group">
                     <label for="origin">Origin</label>
                     <input type="text" id="origin" name="origin" placeholder="Masukkan lokasi asal" required>
                 </div>
@@ -48,8 +69,17 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="jam-kirim">Jam Kirim</label>
-                    <input type="time" id="jam-kirim" name="jam-kirim" required>
+                    <label for="driver-id">Driver ID</label>
+                    <input type="text" id="driver-id" name="driver-id" placeholder="Masukkan ID driver" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="fleet-type">Fleet Type</label>
+                    <select id="fleet-type" name="fleet-type" required>
+                        <option value="">Pilih tipe armada</option>
+                        <option value="Dedicated">Dedicated</option>
+                        <option value="On-Call">On-Call</option>
+                    </select>
                 </div>
 
                 <button type="submit" class="submit-button">Simpan Data</button>
@@ -82,10 +112,17 @@
         document.getElementById("shipping-form").addEventListener("submit", async function (event) {
             event.preventDefault();
             const { data: userData } = await supabase.auth.getUser();
+            const plannedArrival = document.getElementById("planned-arrival").value;
             const { error } = await supabase.from("shipments").insert({
+                trip_id: document.getElementById("trip-id").value.trim(),
+                shipping_date: document.getElementById("shipping-date").value,
+                planned_arrival: plannedArrival,
+                arrival_time: null,
                 origin: document.getElementById("origin").value,
                 destination: document.getElementById("destination").value,
                 shipping_time: document.getElementById("jam-kirim").value,
+                driver_id: document.getElementById("driver-id").value.trim(),
+                fleet_type: document.getElementById("fleet-type").value,
                 status: "Belum",
                 created_by: userData.user.id
             });
@@ -100,6 +137,7 @@
             const session = await requirePageAccess("inputdata.html");
             if (session) {
                 setupNavigation(session.profile);
+                document.getElementById("shipping-date").value = new Date().toISOString().slice(0, 10);
                 await refreshInputSummary();
             }
         } catch (error) {
