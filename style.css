@@ -412,12 +412,12 @@ button.header-action {
 .recent-route strong { color: #3d4e68; display: block; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .recent-route span { color: #a0a9b6; display: block; font-size: 10px; margin-top: 4px; }
 .recent-item .status { font-size: 10px; padding: 4px 8px; }
-.sidebar-footer { align-items: center; bottom: 22px; color: rgba(255,255,255,.58); display: flex; font-size: 11px; gap: 7px; left: 14px; min-width: 0; position: absolute; right: 14px; }
+.sidebar-footer { align-items: center; bottom: max(22px, env(safe-area-inset-bottom)); color: rgba(255,255,255,.58); display: flex; font-size: 11px; gap: 7px; left: 14px; min-width: 0; position: absolute; right: 14px; z-index: 2; }
 .sidebar-footer > span:not(.online-dot) { flex: 1; min-width: 0; }
 .sidebar-footer strong, .sidebar-footer small { display: block; max-width: 142px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sidebar-footer strong { color: rgba(255,255,255,.9); font-size: 11px; }
 .sidebar-footer small { font-size: 9px; margin-top: 3px; }
-.sidebar-footer button { align-items: center; background: transparent; border: 0; color: rgba(255,255,255,.7); cursor: pointer; display: flex; flex: 0 0 40px; font-size: 17px; height: 40px; justify-content: center; margin-left: auto; padding: 4px; }
+.sidebar-footer button { align-items: center; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); border-radius: 8px; color: white; cursor: pointer; display: flex; flex: 0 0 40px; font-size: 17px; height: 40px; justify-content: center; margin-left: auto; padding: 4px; visibility: visible; }
 .sidebar-footer button:hover { color: white; }
 .online-dot { background: #6bd29a; border-radius: 50%; box-shadow: 0 0 0 3px rgba(107,210,154,.15); height: 7px; width: 7px; }
 .nav-icon { display: inline-block; font-size: 16px; margin-right: 8px; opacity: .85; text-align: center; width: 18px; }
@@ -880,7 +880,7 @@ td {
     }
 
     .sidebar-footer {
-        bottom: 12px;
+        bottom: max(12px, env(safe-area-inset-bottom));
         display: flex;
         justify-content: center;
         left: 0;
@@ -895,6 +895,7 @@ td {
     .sidebar-footer button {
         flex-basis: 44px;
         height: 44px;
+        margin: 0;
     }
 
     .main-content {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "pengiriman-shell-v2";
+const CACHE_NAME = "pengiriman-shell-v3";
 const APP_SHELL = [
     "./",
     "./index.html",
@@ -9,7 +9,8 @@ const APP_SHELL = [
     "./laporan.html",
     "./style.css",
     "./logo.png",
-    "./manifest.webmanifest"
+    "./manifest.webmanifest",
+    "./service-worker.js"
 ];
 
 self.addEventListener("install", function (event) {
