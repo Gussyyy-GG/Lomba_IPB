@@ -884,7 +884,9 @@ td {
         display: flex;
         justify-content: center;
         left: 0;
-        right: 0;
+        position: fixed;
+        right: auto;
+        width: 62px;
     }
 
     .sidebar-footer > .online-dot,
@@ -1050,6 +1052,10 @@ td {
 
     .logo img {
         width: 38px;
+    }
+
+    .sidebar-footer {
+        width: 54px;
     }
 
     .stats-grid {
