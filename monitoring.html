@@ -125,26 +125,41 @@
         });
 
         document.querySelectorAll(".status-button").forEach(function (button) {
-        button.addEventListener("click", async function () {
-            const shipments = await getShipments();
-            const shipment = shipments[selectedShipmentIndex];
-            const arrivalTime = button.dataset.status === "Sudah" ? new Date().toTimeString().slice(0, 8) : null;
-            let status = button.dataset.status;
-            if (status === "Sudah" && timeToMinutes(arrivalTime) > timeToMinutes(shipment.planned_arrival) + 30) status = "Terlambat";
-            const { error } = await supabase.from("shipments").update({ status: status, arrival_time: arrivalTime }).eq("id", shipment.id);
-            if (error) {
-                showError(error.message);
-                return;
-            }
-            modal.hidden = true;
-            await renderShipments();
+            button.addEventListener("click", async function () {
+                const shipments = await getShipments();
+                const shipment = shipments[selectedShipmentIndex];
+                const arrivalTime = button.dataset.status === "Sudah" ? new Date().toTimeString().slice(0, 8) : null;
+                const status = button.dataset.status === "Sudah"
+                    ? getArrivalStatus(arrivalTime, shipment.planned_arrival)
+                    : "Belum";
+                const { error } = await supabase
+                    .from("shipments")
+                    .update({ status: status, arrival_time: arrivalTime })
+                    .eq("id", shipment.id);
+
+                if (error) {
+                    showError(error.message);
+                    return;
+                }
+
+                modal.hidden = true;
+                await renderShipments();
+            });
         });
+
+        function getArrivalStatus(arrivalTime, plannedTime) {
+            if (!arrivalTime || !plannedTime) {
+                return "Sudah";
+            }
+
+            const toleranceLimit = timeToMinutes(plannedTime) + 30;
+            return timeToMinutes(arrivalTime) > toleranceLimit ? "Terlambat" : "Sudah";
+        }
 
         function timeToMinutes(time) {
             const parts = time.split(":").map(Number);
-            return parts[0] * 60 + parts[1];
+            return (parts[0] * 60) + parts[1];
         }
-        });
 
         document.getElementById("close-modal").addEventListener("click", function () {
             modal.hidden = true;
