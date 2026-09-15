@@ -13,17 +13,27 @@
             <img src="logo.png" alt="Logo Website">
         </div>
 
-        <nav>
-            <a href="index.html">Dashboard</a>
-            <a class="active" href="inputdata.html">Input Data</a>
-            <a href="monitoring.html">Monitoring</a>
-            <a href="laporan.html">Laporan</a>
+        <nav aria-label="Navigasi utama">
+            <a href="dashboard.html"><span class="nav-icon">⌂</span> Dashboard</a>
+            <a class="active" href="inputdata.html"><span class="nav-icon">＋</span> Input Data</a>
+            <a href="monitoring.html"><span class="nav-icon">◉</span> Monitoring</a>
+            <a href="laporan.html"><span class="nav-icon">▤</span> Laporan</a>
         </nav>
+        <div class="sidebar-footer"><span class="online-dot"></span>Sistem aktif</div>
     </aside>
 
     <main class="main-content">
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">MANAJEMEN DATA</p>
+                <h1>Input Data Pengiriman</h1>
+                <p class="welcome-text">Tambahkan rute baru untuk dipantau pada dashboard.</p>
+            </div>
+            <a class="text-link" href="dashboard.html">← Kembali ke dashboard</a>
+        </header>
+
         <section class="input-card">
-            <h1>Input Data Pengiriman</h1>
+            <div class="section-label">FORM PENGIRIMAN</div>
             <p>Masukkan informasi pengiriman pada form berikut.</p>
 
             <form id="shipping-form">
@@ -45,9 +55,22 @@
                 <button type="submit" class="submit-button">Simpan Data</button>
             </form>
         </section>
+
+        <section class="page-summary">
+            <div><span>Total tersimpan</span><strong id="input-total">0</strong></div>
+            <div><span>Menunggu verifikasi</span><strong id="input-pending">0</strong></div>
+            <div><span>Sudah sampai</span><strong id="input-arrived">0</strong></div>
+        </section>
     </main>
 
     <script>
+        function refreshInputSummary() {
+            const shipments = JSON.parse(localStorage.getItem("shipments") || "[]");
+            document.getElementById("input-total").textContent = shipments.length;
+            document.getElementById("input-pending").textContent = shipments.filter(function (item) { return item.status !== "Sudah"; }).length;
+            document.getElementById("input-arrived").textContent = shipments.filter(function (item) { return item.status === "Sudah"; }).length;
+        }
+
         document.getElementById("shipping-form").addEventListener("submit", function (event) {
             event.preventDefault();
 
@@ -62,6 +85,9 @@
             localStorage.setItem("shipments", JSON.stringify(shipments));
             window.location.href = "monitoring.html";
         });
+
+        refreshInputSummary();
+        window.addEventListener("storage", refreshInputSummary);
     </script>
 </body>
 </html>

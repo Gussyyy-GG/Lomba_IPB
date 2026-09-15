@@ -13,17 +13,33 @@
             <img src="logo.png" alt="Logo Website">
         </div>
 
-        <nav>
-            <a href="index.html">Dashboard</a>
-            <a href="inputdata.html">Input Data</a>
-            <a class="active" href="monitoring.html">Monitoring</a>
-            <a href="laporan.html">Laporan</a>
+        <nav aria-label="Navigasi utama">
+            <a href="dashboard.html"><span class="nav-icon">⌂</span> Dashboard</a>
+            <a href="inputdata.html"><span class="nav-icon">＋</span> Input Data</a>
+            <a class="active" href="monitoring.html"><span class="nav-icon">◉</span> Monitoring</a>
+            <a href="laporan.html"><span class="nav-icon">▤</span> Laporan</a>
         </nav>
+        <div class="sidebar-footer"><span class="online-dot"></span>Sistem aktif</div>
     </aside>
 
     <main class="main-content">
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">PEMANTAUAN REAL-TIME</p>
+                <h1>Monitoring Pengiriman</h1>
+                <p class="welcome-text">Verifikasi status dan pantau seluruh rute pengiriman.</p>
+            </div>
+            <a class="header-action" href="inputdata.html">＋ <span>Pengiriman baru</span></a>
+        </header>
+
+        <section class="page-summary">
+            <div><span>Total pengiriman</span><strong id="monitor-total">0</strong></div>
+            <div><span>Sudah sampai</span><strong id="monitor-arrived">0</strong></div>
+            <div><span>Dalam perjalanan</span><strong id="monitor-pending">0</strong></div>
+        </section>
+
         <section class="table-card">
-            <h1>Monitoring Pengiriman</h1>
+            <h2>Daftar pengiriman</h2>
             <p>Verifikasi status setiap pengiriman melalui tombol pada tabel.</p>
 
             <div class="table-wrapper">
@@ -68,6 +84,9 @@
         function renderShipments() {
             const shipments = getShipments();
             shipmentList.innerHTML = "";
+            document.getElementById("monitor-total").textContent = shipments.length;
+            document.getElementById("monitor-arrived").textContent = shipments.filter(function (item) { return item.status === "Sudah"; }).length;
+            document.getElementById("monitor-pending").textContent = shipments.filter(function (item) { return item.status !== "Sudah"; }).length;
 
             if (shipments.length === 0) {
                 shipmentList.innerHTML = '<tr><td colspan="6" class="empty-state">Belum ada data pengiriman.</td></tr>';
@@ -129,6 +148,7 @@
         });
 
         renderShipments();
+        window.addEventListener("storage", renderShipments);
     </script>
 </body>
 </html>

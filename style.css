@@ -119,6 +119,75 @@ body {
     font-size: 14px;
 }
 
+.page-header {
+    align-items: flex-end;
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    margin: 4px auto 26px;
+    width: min(100%, 1100px);
+}
+
+.page-header h1 {
+    color: #1f3657;
+    font-size: 28px;
+    margin-bottom: 6px;
+}
+
+.text-link {
+    color: #4c78b6;
+    font-size: 12px;
+    font-weight: bold;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.text-link:hover,
+.card-heading a:hover {
+    text-decoration: underline;
+}
+
+.section-label {
+    color: #4c78b6;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    margin-bottom: 9px;
+}
+
+.page-summary {
+    display: flex;
+    gap: 14px;
+    margin: 0 auto 20px;
+    width: min(100%, 1100px);
+}
+
+.page-summary > div {
+    background: #f8fafc;
+    border: 1px solid #edf0f5;
+    border-radius: 9px;
+    flex: 1;
+    padding: 13px 16px;
+}
+
+.page-summary span {
+    color: #7b8798;
+    display: block;
+    font-size: 11px;
+    margin-bottom: 6px;
+}
+
+.page-summary strong {
+    color: #263d60;
+    font-size: 20px;
+}
+
+.table-card h2 {
+    color: #314e76;
+    font-size: 22px;
+    margin-bottom: 8px;
+}
+
 .header-action {
     color: white;
     background: #31547f;
@@ -562,6 +631,15 @@ td {
         flex-direction: column;
     }
 
+    .page-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .page-summary {
+        flex-wrap: wrap;
+    }
+
 }
 
 @media (max-width: 480px) {
@@ -596,6 +674,15 @@ td {
 
     .stats-grid {
         gap: 10px;
+    }
+
+    .page-summary {
+        gap: 8px;
+    }
+
+    .page-summary > div {
+        min-width: calc(50% - 4px);
+        padding: 11px;
     }
 
     .stat-card {

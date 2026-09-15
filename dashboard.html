@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pengiriman</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="logo">
+            <img src="logo.png" alt="Logo Website">
+        </div>
+
+        <nav aria-label="Navigasi utama">
+            <a class="active" href="dashboard.html">
+                <span class="nav-icon">⌂</span> Dashboard
+            </a>
+            <a href="inputdata.html">
+                <span class="nav-icon">＋</span> Input Data
+            </a>
+            <a href="monitoring.html">
+                <span class="nav-icon">◉</span> Monitoring
+            </a>
+            <a href="laporan.html">
+                <span class="nav-icon">▤</span> Laporan
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <span class="online-dot"></span>
+            Sistem aktif
+        </div>
+    </aside>
+
+    <main class="main-content dashboard-content">
+        <header class="dashboard-header">
+            <div>
+                <p class="eyebrow">SISTEM INFORMASI PENGIRIMAN</p>
+                <h1>Dashboard</h1>
+                <p class="welcome-text">Pantau aktivitas pengiriman Anda hari ini.</p>
+            </div>
+            <a class="header-action" href="inputdata.html">＋ <span>Pengiriman baru</span></a>
+        </header>
+
+        <section class="stats-grid" aria-label="Ringkasan pengiriman">
+            <article class="stat-card stat-blue">
+                <div class="stat-icon">↗</div>
+                <div>
+                    <p>Total pengiriman</p>
+                    <strong id="total-shipments">0</strong>
+                    <small>Semua data tercatat</small>
+                </div>
+            </article>
+            <article class="stat-card stat-green">
+                <div class="stat-icon">✓</div>
+                <div>
+                    <p>Sudah sampai</p>
+                    <strong id="arrived-shipments">0</strong>
+                    <small id="arrival-rate">0% dari total</small>
+                </div>
+            </article>
+            <article class="stat-card stat-orange">
+                <div class="stat-icon">◷</div>
+                <div>
+                    <p>Dalam perjalanan</p>
+                    <strong id="pending-shipments">0</strong>
+                    <small>Perlu dipantau</small>
+                </div>
+            </article>
+            <article class="stat-card stat-purple">
+                <div class="stat-icon">▤</div>
+                <div>
+                    <p>Total laporan</p>
+                    <strong id="total-reports">0</strong>
+                    <small>Informasi tersimpan</small>
+                </div>
+            </article>
+        </section>
+
+        <section class="dashboard-grid">
+            <article class="chart-card trend-card">
+                <div class="card-heading">
+                    <div>
+                        <h2>Tren pengiriman</h2>
+                        <p>Jumlah pengiriman berdasarkan waktu input</p>
+                    </div>
+                    <span class="chart-legend"><i></i> Pengiriman</span>
+                </div>
+                <div class="line-chart">
+                    <div class="y-axis" aria-hidden="true"><span>8</span><span>6</span><span>4</span><span>2</span><span>0</span></div>
+                    <div class="chart-area">
+                        <div class="grid-lines" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+                        <svg id="trend-chart" viewBox="0 0 600 210" preserveAspectRatio="none" role="img" aria-label="Grafik tren pengiriman">
+                            <defs>
+                                <linearGradient id="trend-fill" x1="0" x2="0" y1="0" y2="1">
+                                    <stop offset="0%" stop-color="#4c78b6" stop-opacity=".28"/>
+                                    <stop offset="100%" stop-color="#4c78b6" stop-opacity="0"/>
+                                </linearGradient>
+                            </defs>
+                            <path id="trend-area" fill="url(#trend-fill)" d=""></path>
+                            <polyline id="trend-line" fill="none" stroke="#4c78b6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points=""></polyline>
+                            <g id="trend-dots"></g>
+                        </svg>
+                        <div id="trend-labels" class="x-axis"></div>
+                    </div>
+                </div>
+            </article>
+
+            <article class="chart-card status-card">
+                <div class="card-heading">
+                    <div>
+                        <h2>Status pengiriman</h2>
+                        <p>Ringkasan status saat ini</p>
+                    </div>
+                </div>
+                <div class="donut-wrap">
+                    <div class="donut-chart" id="status-donut"><div><strong id="donut-total">0</strong><span>Pengiriman</span></div></div>
+                    <div class="status-legend">
+                        <div><span class="legend-dot arrived-dot"></span><span>Sudah sampai</span><strong id="legend-arrived">0</strong></div>
+                        <div><span class="legend-dot pending-dot"></span><span>Belum sampai</span><strong id="legend-pending">0</strong></div>
+                    </div>
+                </div>
+            </article>
+
+            <article class="chart-card route-card">
+                <div class="card-heading">
+                    <div>
+                        <h2>Rute terpopuler</h2>
+                        <p>Asal dan tujuan pengiriman</p>
+                    </div>
+                </div>
+                <div id="route-chart" class="bar-chart"></div>
+            </article>
+
+            <article class="chart-card recent-card">
+                <div class="card-heading">
+                    <div>
+                        <h2>Pengiriman terbaru</h2>
+                        <p>Data terakhir yang ditambahkan</p>
+                    </div>
+                    <a href="monitoring.html">Lihat semua</a>
+                </div>
+                <div id="recent-shipments" class="recent-list"></div>
+            </article>
+        </section>
+    </main>
+
+    <script>
+        function getData(key) {
+            try {
+                return JSON.parse(localStorage.getItem(key) || "[]");
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function updateDashboard() {
+            const shipments = getData("shipments");
+            const reports = getData("reports");
+            const arrived = shipments.filter(function (item) { return item.status === "Sudah"; }).length;
+            const pending = shipments.length - arrived;
+            const rate = shipments.length ? Math.round((arrived / shipments.length) * 100) : 0;
+
+            document.getElementById("total-shipments").textContent = shipments.length;
+            document.getElementById("arrived-shipments").textContent = arrived;
+            document.getElementById("pending-shipments").textContent = pending;
+            document.getElementById("total-reports").textContent = reports.length;
+            document.getElementById("arrival-rate").textContent = rate + "% dari total";
+            document.getElementById("donut-total").textContent = shipments.length;
+            document.getElementById("legend-arrived").textContent = arrived;
+            document.getElementById("legend-pending").textContent = pending;
+            document.getElementById("status-donut").style.setProperty("--arrived-rate", rate + "%");
+
+            renderTrend(shipments);
+            renderRoutes(shipments);
+            renderRecent(shipments);
+        }
+
+        function renderTrend(shipments) {
+            const days = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
+            const counts = [0, 0, 0, 0, 0, 0, 0];
+            shipments.forEach(function (shipment) {
+                if (!shipment.createdAt) return;
+                const date = new Date(shipment.createdAt);
+                if (!Number.isNaN(date.getTime())) counts[(date.getDay() + 6) % 7]++;
+            });
+            const max = Math.max(2, Math.max.apply(null, counts));
+            const points = counts.map(function (count, index) {
+                return (index * 100) + "," + (200 - (count / max) * 170);
+            });
+            document.getElementById("trend-line").setAttribute("points", points.join(" "));
+            document.getElementById("trend-area").setAttribute("d", "M " + points.join(" L ") + " L 600,210 L 0,210 Z");
+            document.getElementById("trend-dots").innerHTML = points.map(function (point, index) {
+                const values = point.split(",");
+                return '<circle cx="' + values[0] + '" cy="' + values[1] + '" r="4" fill="#fff" stroke="#4c78b6" stroke-width="3"><title>' + days[index] + ": " + counts[index] + " pengiriman</title></circle>";
+            }).join("");
+            document.getElementById("trend-labels").innerHTML = days.map(function (day) { return "<span>" + day + "</span>"; }).join("");
+        }
+
+        function renderRoutes(shipments) {
+            const routes = {};
+            shipments.forEach(function (shipment) {
+                const route = (shipment.origin || "Asal") + " → " + (shipment.destination || "Tujuan");
+                routes[route] = (routes[route] || 0) + 1;
+            });
+            const sorted = Object.keys(routes).sort(function (a, b) { return routes[b] - routes[a]; }).slice(0, 4);
+            const max = sorted.length ? routes[sorted[0]] : 1;
+            const container = document.getElementById("route-chart");
+            container.innerHTML = sorted.length ? sorted.map(function (route) {
+                return '<div class="bar-row"><div class="bar-label"><span title="' + route + '">' + route + '</span><strong>' + routes[route] + '</strong></div><div class="bar-track"><i style="width:' + (routes[route] / max * 100) + '%"></i></div></div>';
+            }).join("") : '<p class="empty-chart">Belum ada data rute.</p>';
+        }
+
+        function renderRecent(shipments) {
+            const recent = shipments.slice(-4).reverse();
+            const container = document.getElementById("recent-shipments");
+            container.innerHTML = recent.length ? recent.map(function (shipment) {
+                const statusClass = shipment.status === "Sudah" ? "status-arrived" : "status-pending";
+                return '<div class="recent-item"><div class="route-avatar">↗</div><div class="recent-route"><strong>' + (shipment.origin || "-") + " → " + (shipment.destination || "-") + '</strong><span>' + (shipment.time || "--:--") + ' · Jadwal pengiriman</span></div><span class="status ' + statusClass + '">' + (shipment.status || "Belum") + "</span></div>";
+            }).join("") : '<p class="empty-chart">Belum ada pengiriman. <a href="inputdata.html">Tambah data sekarang</a>.</p>';
+        }
+
+        updateDashboard();
+        window.addEventListener("storage", updateDashboard);
+        window.addEventListener("pageshow", updateDashboard);
+    </script>
+</body>
+</html>
