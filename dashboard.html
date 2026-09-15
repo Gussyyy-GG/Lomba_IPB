@@ -14,23 +14,24 @@
         </div>
 
         <nav aria-label="Navigasi utama">
-            <a class="active" href="dashboard.html">
+            <a class="active" data-page="dashboard.html" href="dashboard.html">
                 <span class="nav-icon">⌂</span> Dashboard
             </a>
-            <a href="inputdata.html">
+            <a data-page="inputdata.html" href="inputdata.html">
                 <span class="nav-icon">＋</span> Input Data
             </a>
-            <a href="monitoring.html">
+            <a data-page="monitoring.html" href="monitoring.html">
                 <span class="nav-icon">◉</span> Monitoring
             </a>
-            <a href="laporan.html">
+            <a data-page="laporan.html" href="laporan.html">
                 <span class="nav-icon">▤</span> Laporan
             </a>
         </nav>
 
         <div class="sidebar-footer">
             <span class="online-dot"></span>
-            Sistem aktif
+            <span><strong data-user-name>Pengguna</strong><small data-user-role>Memuat role...</small></span>
+            <button type="button" data-action="logout" title="Keluar">↪</button>
         </div>
     </aside>
 
@@ -43,6 +44,7 @@
             </div>
             <a class="header-action" href="inputdata.html">＋ <span>Pengiriman baru</span></a>
         </header>
+        <div class="login-error" data-error hidden></div>
 
         <section class="stats-grid" aria-label="Ringkasan pengiriman">
             <article class="stat-card stat-blue">
@@ -147,18 +149,21 @@
         </section>
     </main>
 
-    <script>
-        function getData(key) {
-            try {
-                return JSON.parse(localStorage.getItem(key) || "[]");
-            } catch (error) {
-                return [];
-            }
-        }
+    <script type="module">
+        import { supabase, requirePageAccess, setupNavigation, showError } from "./supabase-client.js";
 
-        function updateDashboard() {
-            const shipments = getData("shipments");
-            const reports = getData("reports");
+        let shipments = [];
+        let reports = [];
+
+        async function updateDashboard() {
+            const shipmentResult = await supabase.from("shipments").select("id, origin, destination, shipping_time, status, created_at").order("created_at", { ascending: true });
+            const reportResult = await supabase.from("reports").select("id");
+            if (shipmentResult.error) throw shipmentResult.error;
+            if (reportResult.error) throw reportResult.error;
+            shipments = shipmentResult.data.map(function (item) {
+                return { origin: item.origin, destination: item.destination, time: item.shipping_time, status: item.status, createdAt: item.created_at };
+            });
+            reports = reportResult.data;
             const arrived = shipments.filter(function (item) { return item.status === "Sudah"; }).length;
             const pending = shipments.length - arrived;
             const rate = shipments.length ? Math.round((arrived / shipments.length) * 100) : 0;
@@ -222,9 +227,18 @@
             }).join("") : '<p class="empty-chart">Belum ada pengiriman. <a href="inputdata.html">Tambah data sekarang</a>.</p>';
         }
 
-        updateDashboard();
-        window.addEventListener("storage", updateDashboard);
-        window.addEventListener("pageshow", updateDashboard);
+        try {
+            const session = await requirePageAccess("dashboard.html");
+            if (session) {
+                setupNavigation(session.profile);
+                await updateDashboard();
+            }
+        } catch (error) {
+            showError("Dashboard gagal memuat data dari Supabase.");
+        }
+        window.addEventListener("pageshow", function () {
+            updateDashboard().catch(function () {});
+        });
     </script>
 </body>
 </html>

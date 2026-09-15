@@ -14,12 +14,12 @@
         </div>
 
         <nav aria-label="Navigasi utama">
-            <a href="dashboard.html"><span class="nav-icon">⌂</span> Dashboard</a>
-            <a href="inputdata.html"><span class="nav-icon">＋</span> Input Data</a>
-            <a href="monitoring.html"><span class="nav-icon">◉</span> Monitoring</a>
-            <a class="active" href="laporan.html"><span class="nav-icon">▤</span> Laporan</a>
+            <a data-page="dashboard.html" href="dashboard.html"><span class="nav-icon">⌂</span> Dashboard</a>
+            <a data-page="inputdata.html" href="inputdata.html"><span class="nav-icon">＋</span> Input Data</a>
+            <a data-page="monitoring.html" href="monitoring.html"><span class="nav-icon">◉</span> Monitoring</a>
+            <a class="active" data-page="laporan.html" href="laporan.html"><span class="nav-icon">▤</span> Laporan</a>
         </nav>
-        <div class="sidebar-footer"><span class="online-dot"></span>Sistem aktif</div>
+        <div class="sidebar-footer"><span class="online-dot"></span><span><strong data-user-name>Pengguna</strong><small data-user-role>Memuat role...</small></span><button type="button" data-action="logout" title="Keluar">↪</button></div>
     </aside>
 
     <main class="main-content">
@@ -31,6 +31,7 @@
             </div>
             <a class="text-link" href="dashboard.html">← Kembali ke dashboard</a>
         </header>
+        <div class="login-error" data-error hidden></div>
 
         <section class="input-card report-input-card">
             <div class="section-label">LAPORAN BARU</div>
@@ -77,29 +78,34 @@
         </section>
     </main>
 
-    <script>
+    <script type="module">
+        import { supabase, requirePageAccess, setupNavigation, showError } from "./supabase-client.js";
         const reportForm = document.getElementById("report-form");
         const shipmentInput = document.getElementById("shipment");
         const reportInput = document.getElementById("report");
         const reportList = document.getElementById("report-list");
 
-        function getShipments() {
-            return JSON.parse(localStorage.getItem("shipments") || "[]");
+        async function getShipments() {
+            const { data, error } = await supabase.from("shipments").select("id, origin, destination, shipping_time").order("created_at", { ascending: false });
+            if (error) throw error;
+            return data;
         }
 
-        function getReports() {
-            return JSON.parse(localStorage.getItem("reports") || "[]");
+        async function getReports() {
+            const { data, error } = await supabase.from("reports").select("id, report_text, created_at, shipments(origin, destination)").order("created_at", { ascending: false });
+            if (error) throw error;
+            return data;
         }
 
-        function renderShipmentOptions() {
-            const shipments = getShipments();
+        async function renderShipmentOptions() {
+            const shipments = await getShipments();
             document.getElementById("report-shipments").textContent = shipments.length;
             shipmentInput.innerHTML = '<option value="">Pilih pengiriman</option>';
 
             shipments.forEach(function (shipment, index) {
                 const option = document.createElement("option");
                 option.value = index;
-                option.textContent = `${shipment.origin} → ${shipment.destination} (${shipment.time})`;
+                option.textContent = `${shipment.origin} → ${shipment.destination} (${shipment.shipping_time})`;
                 shipmentInput.appendChild(option);
             });
 
@@ -108,8 +114,8 @@
             }
         }
 
-        function renderReports() {
-            const reports = getReports();
+        async function renderReports() {
+            const reports = await getReports();
             reportList.innerHTML = "";
             document.getElementById("report-total").textContent = reports.length;
 
@@ -122,44 +128,48 @@
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>${index + 1}</td>
-                    <td>${item.shipment || "-"}</td>
-                    <td>${item.text}</td>
-                    <td>${item.createdAt}</td>
+                    <td>${item.shipments ? item.shipments.origin + " → " + item.shipments.destination : "-"}</td>
+                    <td>${item.report_text}</td>
+                    <td>${new Date(item.created_at).toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" })}</td>
                 `;
                 reportList.appendChild(row);
             });
         }
 
-        reportForm.addEventListener("submit", function (event) {
+        reportForm.addEventListener("submit", async function (event) {
             event.preventDefault();
 
-            const shipments = getShipments();
+            const shipments = await getShipments();
             const selectedShipment = shipments[Number(shipmentInput.value)];
 
             if (!selectedShipment) {
                 return;
             }
 
-            const reports = getReports();
-            reports.push({
-                shipment: `${selectedShipment.origin} → ${selectedShipment.destination}`,
-                text: reportInput.value.trim(),
-                createdAt: new Date().toLocaleString("id-ID", {
-                    dateStyle: "short",
-                    timeStyle: "short"
-                })
+            const { data: userData } = await supabase.auth.getUser();
+            const { error } = await supabase.from("reports").insert({
+                shipment_id: selectedShipment.id,
+                report_text: reportInput.value.trim(),
+                created_by: userData.user.id
             });
-            localStorage.setItem("reports", JSON.stringify(reports));
+            if (error) {
+                showError(error.message);
+                return;
+            }
             reportForm.reset();
-            renderReports();
+            await renderReports();
         });
 
-        renderShipmentOptions();
-        renderReports();
-        window.addEventListener("storage", function () {
-            renderShipmentOptions();
-            renderReports();
-        });
+        try {
+            const session = await requirePageAccess("laporan.html");
+            if (session) {
+                setupNavigation(session.profile);
+                await renderShipmentOptions();
+                await renderReports();
+            }
+        } catch (error) {
+            showError("Laporan gagal memuat data dari Supabase.");
+        }
     </script>
 </body>
 </html>

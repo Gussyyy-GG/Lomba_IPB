@@ -14,12 +14,12 @@
         </div>
 
         <nav aria-label="Navigasi utama">
-            <a href="dashboard.html"><span class="nav-icon">⌂</span> Dashboard</a>
-            <a href="inputdata.html"><span class="nav-icon">＋</span> Input Data</a>
-            <a class="active" href="monitoring.html"><span class="nav-icon">◉</span> Monitoring</a>
-            <a href="laporan.html"><span class="nav-icon">▤</span> Laporan</a>
+            <a data-page="dashboard.html" href="dashboard.html"><span class="nav-icon">⌂</span> Dashboard</a>
+            <a data-page="inputdata.html" href="inputdata.html"><span class="nav-icon">＋</span> Input Data</a>
+            <a class="active" data-page="monitoring.html" href="monitoring.html"><span class="nav-icon">◉</span> Monitoring</a>
+            <a data-page="laporan.html" href="laporan.html"><span class="nav-icon">▤</span> Laporan</a>
         </nav>
-        <div class="sidebar-footer"><span class="online-dot"></span>Sistem aktif</div>
+        <div class="sidebar-footer"><span class="online-dot"></span><span><strong data-user-name>Pengguna</strong><small data-user-role>Memuat role...</small></span><button type="button" data-action="logout" title="Keluar">↪</button></div>
     </aside>
 
     <main class="main-content">
@@ -31,6 +31,7 @@
             </div>
             <a class="header-action" href="inputdata.html">＋ <span>Pengiriman baru</span></a>
         </header>
+        <div class="login-error" data-error hidden></div>
 
         <section class="page-summary">
             <div><span>Total pengiriman</span><strong id="monitor-total">0</strong></div>
@@ -72,17 +73,20 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { supabase, requirePageAccess, setupNavigation, showError } from "./supabase-client.js";
         const shipmentList = document.getElementById("shipment-list");
         const modal = document.getElementById("verification-modal");
         let selectedShipmentIndex = null;
 
-        function getShipments() {
-            return JSON.parse(localStorage.getItem("shipments") || "[]");
+        async function getShipments() {
+            const { data, error } = await supabase.from("shipments").select("id, origin, destination, shipping_time, arrival_time, status").order("created_at", { ascending: false });
+            if (error) throw error;
+            return data;
         }
 
-        function renderShipments() {
-            const shipments = getShipments();
+        async function renderShipments() {
+            const shipments = await getShipments();
             shipmentList.innerHTML = "";
             document.getElementById("monitor-total").textContent = shipments.length;
             document.getElementById("monitor-arrived").textContent = shipments.filter(function (item) { return item.status === "Sudah"; }).length;
@@ -98,8 +102,8 @@
                 row.innerHTML = `
                     <td>${shipment.origin}</td>
                     <td>${shipment.destination}</td>
-                    <td>${shipment.time}</td>
-                    <td>${shipment.arrivalTime || "-"}</td>
+                    <td>${shipment.shipping_time}</td>
+                    <td>${shipment.arrival_time || "-"}</td>
                     <td><span class="status ${shipment.status === "Sudah" ? "status-arrived" : "status-pending"}">${shipment.status}</span></td>
                     <td><button type="button" class="verify-button" data-index="${index}">Verifikasi</button></td>
                 `;
@@ -116,25 +120,18 @@
         });
 
         document.querySelectorAll(".status-button").forEach(function (button) {
-            button.addEventListener("click", function () {
-                const shipments = getShipments();
-                const shipment = shipments[selectedShipmentIndex];
-                shipment.status = button.dataset.status;
-
-                if (button.dataset.status === "Sudah") {
-                    shipment.arrivalTime = new Date().toLocaleTimeString("id-ID", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: false
-                    });
-                } else {
-                    shipment.arrivalTime = "";
-                }
-
-                localStorage.setItem("shipments", JSON.stringify(shipments));
-                modal.hidden = true;
-                renderShipments();
-            });
+        button.addEventListener("click", async function () {
+            const shipments = await getShipments();
+            const shipment = shipments[selectedShipmentIndex];
+            const arrivalTime = button.dataset.status === "Sudah" ? new Date().toTimeString().slice(0, 8) : null;
+            const { error } = await supabase.from("shipments").update({ status: button.dataset.status, arrival_time: arrivalTime }).eq("id", shipment.id);
+            if (error) {
+                showError(error.message);
+                return;
+            }
+            modal.hidden = true;
+            await renderShipments();
+        });
         });
 
         document.getElementById("close-modal").addEventListener("click", function () {
@@ -147,8 +144,15 @@
             }
         });
 
-        renderShipments();
-        window.addEventListener("storage", renderShipments);
+        try {
+            const session = await requirePageAccess("monitoring.html");
+            if (session) {
+                setupNavigation(session.profile);
+                await renderShipments();
+            }
+        } catch (error) {
+            showError("Monitoring gagal memuat data dari Supabase.");
+        }
     </script>
 </body>
 </html>

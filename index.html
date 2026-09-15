@@ -3,10 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="0; url=dashboard.html">
-    <title>Membuka Dashboard...</title>
+    <title>Mengarahkan...</title>
 </head>
 <body>
-    <p>Membuka <a href="dashboard.html">Dashboard</a>...</p>
+    <p id="redirect-message">Memeriksa sesi login...</p>
+    <p>Jika tidak berpindah otomatis, <a href="login.html">buka halaman login</a>.</p>
+    <script type="module">
+        const fallback = window.setTimeout(function () {
+            window.location.replace("login.html");
+        }, 4000);
+
+        import("./supabase-client.js")
+            .then(async function (module) {
+                const profile = await module.getCurrentProfile();
+                window.clearTimeout(fallback);
+                window.location.replace(profile ? module.getDefaultPage(profile.role) : "login.html");
+            })
+            .catch(function () {
+                window.clearTimeout(fallback);
+                window.location.replace("login.html");
+            });
+    </script>
 </body>
 </html>
