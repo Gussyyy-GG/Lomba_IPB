@@ -56,7 +56,8 @@
                 origin: document.getElementById("origin").value,
                 destination: document.getElementById("destination").value,
                 time: document.getElementById("jam-kirim").value,
-                status: "Belum"
+                status: "Belum",
+                createdAt: new Date().toISOString()
             });
             localStorage.setItem("shipments", JSON.stringify(shipments));
             window.location.href = "monitoring.html";
