@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Pengiriman</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="logo">
+            <img src="logo.png" alt="Logo Website">
+        </div>
+
+        <nav>
+            <a href="index.html">Dashboard</a>
+            <a href="inputdata.html">Input Data</a>
+            <a class="active" href="monitoring.html">Monitoring</a>
+            <a href="laporan.html">Laporan</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <section class="table-card">
+            <h1>Monitoring Pengiriman</h1>
+            <p>Verifikasi status setiap pengiriman melalui tombol pada tabel.</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Origin</th>
+                            <th>Destination</th>
+                            <th>Jam Kirim</th>
+                            <th>Jam Sampai</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shipment-list"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal-overlay" id="verification-modal" hidden>
+        <div class="verification-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <h2 id="modal-title">Verifikasi Pengiriman</h2>
+            <p>Apakah pengiriman ini sudah sampai?</p>
+            <div class="modal-actions">
+                <button type="button" class="status-button arrived" data-status="Sudah">Sudah</button>
+                <button type="button" class="status-button not-arrived" data-status="Belum">Belum</button>
+            </div>
+            <button type="button" class="close-modal" id="close-modal">Tutup</button>
+        </div>
+    </div>
+
+    <script>
+        const shipmentList = document.getElementById("shipment-list");
+        const modal = document.getElementById("verification-modal");
+        let selectedShipmentIndex = null;
+
+        function getShipments() {
+            return JSON.parse(localStorage.getItem("shipments") || "[]");
+        }
+
+        function renderShipments() {
+            const shipments = getShipments();
+            shipmentList.innerHTML = "";
+
+            if (shipments.length === 0) {
+                shipmentList.innerHTML = '<tr><td colspan="6" class="empty-state">Belum ada data pengiriman.</td></tr>';
+                return;
+            }
+
+            shipments.forEach(function (shipment, index) {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${shipment.origin}</td>
+                    <td>${shipment.destination}</td>
+                    <td>${shipment.time}</td>
+                    <td>${shipment.arrivalTime || "-"}</td>
+                    <td><span class="status ${shipment.status === "Sudah" ? "status-arrived" : "status-pending"}">${shipment.status}</span></td>
+                    <td><button type="button" class="verify-button" data-index="${index}">Verifikasi</button></td>
+                `;
+                shipmentList.appendChild(row);
+            });
+        }
+
+        shipmentList.addEventListener("click", function (event) {
+            if (!event.target.classList.contains("verify-button")) {
+                return;
+            }
+            selectedShipmentIndex = Number(event.target.dataset.index);
+            modal.hidden = false;
+        });
+
+        document.querySelectorAll(".status-button").forEach(function (button) {
+            button.addEventListener("click", function () {
+                const shipments = getShipments();
+                const shipment = shipments[selectedShipmentIndex];
+                shipment.status = button.dataset.status;
+
+                if (button.dataset.status === "Sudah") {
+                    shipment.arrivalTime = new Date().toLocaleTimeString("id-ID", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false
+                    });
+                } else {
+                    shipment.arrivalTime = "";
+                }
+
+                localStorage.setItem("shipments", JSON.stringify(shipments));
+                modal.hidden = true;
+                renderShipments();
+            });
+        });
+
+        document.getElementById("close-modal").addEventListener("click", function () {
+            modal.hidden = true;
+        });
+
+        modal.addEventListener("click", function (event) {
+            if (event.target === modal) {
+                modal.hidden = true;
+            }
+        });
+
+        renderShipments();
+    </script>
+</body>
+</html>

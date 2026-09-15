@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="logo">
+            <img src="logo.png" alt="Logo Website">
+        </div>
+
+        <nav>
+            <a href="index.html">Dashboard</a>
+            <a href="inputdata.html">Input Data</a>
+            <a href="monitoring.html">Monitoring</a>
+            <a class="active" href="laporan.html">Laporan</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <section class="input-card report-input-card">
+            <h1>Input Laporan</h1>
+            <p>Tambahkan informasi laporan pengiriman.</p>
+
+            <form id="report-form">
+                <div class="form-group">
+                    <label for="shipment">Pilih Pengiriman</label>
+                    <select id="shipment" name="shipment" required>
+                        <option value="">Memuat data pengiriman...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="report">Laporan</label>
+                    <textarea id="report" name="report" rows="4" placeholder="Masukkan laporan" required></textarea>
+                </div>
+                <button type="submit" class="submit-button">Tambah Laporan</button>
+            </form>
+        </section>
+
+        <section class="table-card">
+            <h1>Tabel Informasi Laporan</h1>
+            <p>Daftar laporan yang telah ditambahkan.</p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Pengiriman</th>
+                            <th>Laporan</th>
+                            <th>Waktu Input</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-list"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const reportForm = document.getElementById("report-form");
+        const shipmentInput = document.getElementById("shipment");
+        const reportInput = document.getElementById("report");
+        const reportList = document.getElementById("report-list");
+
+        function getShipments() {
+            return JSON.parse(localStorage.getItem("shipments") || "[]");
+        }
+
+        function getReports() {
+            return JSON.parse(localStorage.getItem("reports") || "[]");
+        }
+
+        function renderShipmentOptions() {
+            const shipments = getShipments();
+            shipmentInput.innerHTML = '<option value="">Pilih pengiriman</option>';
+
+            shipments.forEach(function (shipment, index) {
+                const option = document.createElement("option");
+                option.value = index;
+                option.textContent = `${shipment.origin} → ${shipment.destination} (${shipment.time})`;
+                shipmentInput.appendChild(option);
+            });
+
+            if (shipments.length === 0) {
+                shipmentInput.innerHTML = '<option value="">Belum ada data pengiriman</option>';
+            }
+        }
+
+        function renderReports() {
+            const reports = getReports();
+            reportList.innerHTML = "";
+
+            if (reports.length === 0) {
+                reportList.innerHTML = '<tr><td colspan="4" class="empty-state">Belum ada laporan.</td></tr>';
+                return;
+            }
+
+            reports.forEach(function (item, index) {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${item.shipment || "-"}</td>
+                    <td>${item.text}</td>
+                    <td>${item.createdAt}</td>
+                `;
+                reportList.appendChild(row);
+            });
+        }
+
+        reportForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const shipments = getShipments();
+            const selectedShipment = shipments[Number(shipmentInput.value)];
+
+            if (!selectedShipment) {
+                return;
+            }
+
+            const reports = getReports();
+            reports.push({
+                shipment: `${selectedShipment.origin} → ${selectedShipment.destination}`,
+                text: reportInput.value.trim(),
+                createdAt: new Date().toLocaleString("id-ID", {
+                    dateStyle: "short",
+                    timeStyle: "short"
+                })
+            });
+            localStorage.setItem("reports", JSON.stringify(reports));
+            reportForm.reset();
+            renderReports();
+        });
+
+        renderShipmentOptions();
+        renderReports();
+    </script>
+</body>
+</html>

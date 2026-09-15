@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Data</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="logo">
+            <img src="logo.png" alt="Logo Website">
+        </div>
+
+        <nav>
+            <a href="index.html">Dashboard</a>
+            <a class="active" href="inputdata.html">Input Data</a>
+            <a href="monitoring.html">Monitoring</a>
+            <a href="laporan.html">Laporan</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <section class="input-card">
+            <h1>Input Data Pengiriman</h1>
+            <p>Masukkan informasi pengiriman pada form berikut.</p>
+
+            <form id="shipping-form">
+                <div class="form-group">
+                    <label for="origin">Origin</label>
+                    <input type="text" id="origin" name="origin" placeholder="Masukkan lokasi asal" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="destination">Destination</label>
+                    <input type="text" id="destination" name="destination" placeholder="Masukkan lokasi tujuan" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="jam-kirim">Jam Kirim</label>
+                    <input type="time" id="jam-kirim" name="jam-kirim" required>
+                </div>
+
+                <button type="submit" class="submit-button">Simpan Data</button>
+            </form>
+        </section>
+    </main>
+
+    <script>
+        document.getElementById("shipping-form").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const shipments = JSON.parse(localStorage.getItem("shipments") || "[]");
+            shipments.push({
+                origin: document.getElementById("origin").value,
+                destination: document.getElementById("destination").value,
+                time: document.getElementById("jam-kirim").value,
+                status: "Belum"
+            });
+            localStorage.setItem("shipments", JSON.stringify(shipments));
+            window.location.href = "monitoring.html";
+        });
+    </script>
+</body>
+</html>
