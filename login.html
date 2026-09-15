@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Sistem Pengiriman</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#314e76">
 </head>
 <body class="login-page">
     <main class="login-shell">
@@ -29,10 +31,49 @@
                 </div>
                 <button class="submit-button login-button" type="submit">Masuk ke sistem</button>
             </form>
+            <button class="install-button" id="install-button" type="button">↓ Download aplikasi</button>
+            <p class="install-help" id="install-help" hidden></p>
         </section>
     </main>
     <script type="module">
         import { supabase, getCurrentProfile, getDefaultPage, showError } from "./supabase-client.js";
+
+        let installPrompt;
+        const installButton = document.getElementById("install-button");
+        const installHelp = document.getElementById("install-help");
+
+        window.addEventListener("beforeinstallprompt", function (event) {
+            event.preventDefault();
+            installPrompt = event;
+            installButton.hidden = false;
+        });
+
+        installButton.addEventListener("click", async function () {
+            if (!installPrompt) {
+                installHelp.textContent = "Gunakan menu browser lalu pilih “Install app” atau “Add to Home Screen”.";
+                installHelp.hidden = false;
+                return;
+            }
+
+            installPrompt.prompt();
+            const result = await installPrompt.userChoice;
+            if (result.outcome === "accepted") {
+                installButton.hidden = true;
+            }
+            installPrompt = null;
+        });
+
+        window.addEventListener("appinstalled", function () {
+            installButton.hidden = true;
+            installHelp.hidden = true;
+        });
+
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("./service-worker.js").catch(function () {
+                installHelp.textContent = "Aplikasi belum dapat dipasang. Pastikan website dibuka melalui HTTPS atau localhost.";
+                installHelp.hidden = false;
+            });
+        }
 
         try {
             const { data, error } = await supabase.auth.getSession();

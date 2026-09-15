@@ -1,0 +1,19 @@
+{
+    "name": "Sistem Informasi Pengiriman",
+    "short_name": "Pengiriman",
+    "description": "Aplikasi monitoring dan pelaporan pengiriman.",
+    "start_url": "./index.html",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#f5f6f8",
+    "theme_color": "#314e76",
+    "lang": "id",
+    "icons": [
+        {
+            "src": "logo.png",
+            "sizes": "any",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
